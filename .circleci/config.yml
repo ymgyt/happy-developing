@@ -5,7 +5,7 @@ jobs:
       - image: circleci/golang:1.11
         # GOPATH外をworking_dirに指定しているが、明示的に指定しておく
         environment:
-          GO111MODULE: "ON"
+          GO111MODULE: "on"
     working_directory: ~/ci
     steps:
       - checkout
