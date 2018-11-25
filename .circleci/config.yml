@@ -6,9 +6,9 @@ jobs:
         # GOPATH外をworking_dirに指定しているが、明示的に指定しておく
         environment:
           GO111MODULE: "ON"
-    working_directory: /hpdev
+    working_directory: ~/ci
     steps:
       - checkout
       - run:
           command: go test
-          working_directory: /hpdev/hpdev
+          working_directory: ~/ci/hpdev
