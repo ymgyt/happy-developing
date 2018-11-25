@@ -1,0 +1,202 @@
+@charset "UTF-8";
+
+html {
+    /* browserのdefault font sizeに対する係数。defaultは16pxなので10pxになる */
+    font-size: 62.5%;
+}
+
+body {
+    color: #333;
+    font-size: 1.2rem;
+    font-family: "Hiragino Kaku Gothic PronN", Meiryo, sans-serif;
+    -webkit-font-smoothing: antialiased; /*Safariのtextのちらつき防止*/
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+a:link, a:visited, a:hover, a:active {
+    color: #d03c56;
+    text-decoration: none;
+}
+
+.wrapper {
+    width: 970px;
+    margin: 30px auto 40px;
+}
+
+.header {
+    width: 100%;
+    padding: 28px 0 10px;
+    background: url('/static/images/sl/bg-header.gif') repeat-x;
+    /*box-shadow: 0 0 10px 1px #e3e3e3; */
+}
+
+.logo {
+    width: 225px;
+    height: 56px;
+    margin: 0 auto; /*centering*/
+    background: url('/static/images/sl/logo.png') no-repeat;
+    /* <-- indent -->|text nowrapなので改行されず、overflow hiddenで表示されない*/
+    overflow: hidden;
+    text-indent: 100%;
+    white-space: nowrap;
+}
+
+.logo a {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.global-nav {
+    margin-top: 150px;
+    text-align: center;
+}
+
+.global-nav .nav-item {
+    display: inline-block;
+    margin: 0 10px;
+}
+
+.global-nav .nav-item a {
+    display: inline-block;
+    width: 100px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 8px;
+    color: #666;
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+    transition: 0.15s;
+}
+
+.global-nav .nav-item.active a,
+.global-nav .nav-item a:hover {
+    background-color: #d03c56;
+    color: #fff;
+}
+
+.main{
+    display: block;
+    float: left;
+    width: 660px;
+}
+
+.hidden {
+    display: none;
+}
+
+.hot-topic {
+    display: block;
+    height: 300px;
+    margin-bottom: 30px;
+    transition: opacity 0.15s;
+}
+
+.hot-topic .image {
+    float: left;
+    width: 50%;
+    height: 100%;
+}
+
+.hot-topic .content {
+    position: relative;
+    float: left;
+    width: 50%;
+    height: 100%;
+    padding: 105px 25px 0;
+    background-color: #2d3d54;
+    line-height: 1.6;
+}
+
+.hot-topic .title {
+    margin-bottom: 15px;
+    color: #fff;
+    font-weight: normal;
+    font-size: 2.0rem;
+}
+
+.hot-topic .desc {
+    color: #ddc;
+}
+
+.hot-topic .date {
+    position: absolute;
+    top: 60px;
+    left:0;
+    width: 140px;
+    padding: 4px;
+    background-color: #fff;
+    color: #2d3d54;
+    text-align: center;
+    letter-spacing: 1px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.hot-topic:hover {
+    opacity: 0.85;
+}
+
+.heading {
+    padding: 10px 12px;
+    background: url('/static/images/sl/bg-slash.gif');
+    letter-spacing: 1px;
+    font-size: 1.6rem;
+}
+
+.scroll-list {
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 30px;
+    list-style-type: none;
+}
+
+.scroll-list .scroll-item a {
+    display: block;
+    padding: 10px 15px;
+    color: #333;
+    transition: background-color 0.1s;
+}
+
+.scroll-list .scroll-item:nth-of-type(even) a {
+    background: url('/static/images/sl/bg-slash.gif');
+}
+
+.scroll-list .scroll-item a:hover {
+    background-color: #fafaf8;
+}
+
+.sideMenu {
+    float: right;
+    width: 275px;
+}
+
+.footer {
+    width: 100%;
+}
+
+.clearfix::after {
+    content: '';
+    display: block;
+    clear: both;
+}
+
+/* for debug
+.header, .main, .sideMenu, .footer {
+    border: 1px solid #aaa;
+    background-color: #ccc;
+}
+
+.header, .footer {
+    height: 100px;
+}
+
+.main, .sideMenu {
+    height: 500px;
+}
+*/

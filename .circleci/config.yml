@@ -1,0 +1,14 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.11
+        # GOPATH外をworking_dirに指定しているが、明示的に指定しておく
+        environment:
+          GO111MODULE: "ON"
+    working_directory: /hpdev
+    steps:
+      - checkout
+      - run:
+          command: go test
+          working_directory: /hpdev/hpdev
