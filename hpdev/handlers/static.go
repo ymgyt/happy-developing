@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/ymgyt/blogo/blogo/app"
+	"github.com/ymgyt/happy-developing/hpdev/app"
 )
 
 // Static -

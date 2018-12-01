@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/ymgyt/blogo/blogo/app"
+	"github.com/ymgyt/happy-developing/hpdev/app"
 )
 
 const (
@@ -30,22 +29,25 @@ func New(cfg Config) (*Handlers, error) {
 	return &Handlers{
 		Example: &Example{base: base, ts: ts, templateName: "layouts/base"},
 		Static:  static,
+		Post:    &Post{base: base, ts: ts, templateName: "new_post", service: cfg.Services.PostService},
 	}, nil
 }
 
 // Config -
 type Config struct {
+	Env                  *app.Env
+	Services             *app.Services
 	AppRoot              string
 	StaticPath           string
 	TemplatePath         string
 	AlwaysParseTemplates bool
-	Env                  *app.Env
 }
 
 // Handlers -
 type Handlers struct {
 	Example *Example
 	Static  *Static
+	Post    *Post
 }
 
 type templateSet struct {
@@ -77,6 +79,7 @@ func (ts *templateSet) executeLatestTemplate(w io.Writer, name string, data inte
 	return t.ExecuteTemplate(w, name, data)
 }
 
+//cSpell:words tmpls
 func makeTemplateSet(root string, alwaysParse bool) (*templateSet, error) {
 	tmpls, err := findTemplateFiles(root)
 	if err != nil {
@@ -123,5 +126,5 @@ func (b base) handleRenderError(err error) {
 		return
 	}
 
-	log.Printf("render error: %s\n", err)
+	b.Env.Log.Error("render error: ", err)
 }

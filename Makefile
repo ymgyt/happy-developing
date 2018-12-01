@@ -1,3 +1,6 @@
+GCP_PROJECT_ID := ${GCP_PROJECT_ID}
+
+
 init: deps
 	circlici setup
 	docker login
@@ -11,10 +14,10 @@ validate/ci:
 
 # docker commands
 docker/build:
-	docker build -t hpdev:latest -f hpdev/Dockerfile hpdev/
+	docker build -t hpdev:latest -f hpdev/Dockerfile --build-arg GCP_PROJECT_ID=${GCP_PROJECT_ID} hpdev/
 
 docker/run:
-	docker run --rm -d --publish 8123:8123 --name hpdev hpdev:latest
+	docker run --rm --publish 8123:8123 --name hpdev hpdev:latest
 
 docker/tag:
 	docker tag hpdev:latest docker.io/ymgyt/hpdev:latest
@@ -23,4 +26,4 @@ docker/push:
 	docker push docker.io/ymgyt/hpdev:latest
 
 
-.phony: init deps validate/ci docker/build docker/run docker/tag docker/push
+.phony: init deps validate/ci docker/build docker/run docker/tag docker/push hoge

@@ -1,0 +1,34 @@
+{{ define "new_post" }}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  {{ template "partials/author/head"}}
+</head>
+
+<body>
+  <div class="container">
+    <div class="new-post">
+      <form action="/author/posts/new" method="post">
+        <div class="input-item">
+          <label for="post-url-safe-title">URL Safe Title</label>
+          <input type="text" name="post-url-safe-tittle">
+        </div>
+
+        <div class="input-item">
+          <label for="post-title">Title</label>
+          <input type="text" name="post-title">
+        </div>
+
+        <div class="input-item">
+          <p><label for="post-content">Content</label></p>
+          <textarea name="post-content" rows="30" cols="60"></textarea>
+        </div>
+        <button type="submit" id="post-submit" class="btn">Create</button>
+      </form>
+    </div>
+  </div>
+</body>
+
+</html>
+{{ end }}
