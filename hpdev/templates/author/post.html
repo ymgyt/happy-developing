@@ -1,0 +1,40 @@
+{{ define "author/post" }}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  {{ template "partials/author/head" }}
+</head>
+
+<body>
+  <div class="container">
+    <div class="new-post">
+      <form action="/author/posts/{{ .FormAction }}" method="post">
+        <!-- IDは編集できなくする -->
+        <div class="input-item">
+          <label for="post-key-id">Meta Key-ID</label>
+          <input type="text" name="post-key-id" readonly="readonly" value="{{ .Data.Meta.Key.ID }}">
+        </div>
+
+        <div class="input-item">
+          <label for="post-url-safe-title">URL Safe Title</label>
+          <input type="text" name="post-url-safe-title" value="{{ .Data.Meta.URLSafeTitle }}">
+        </div>
+
+        <div class="input-item">
+          <label for="post-title">Title</label>
+          <input type="text" name="post-title" value="{{ .Data.Meta.Title }}">
+        </div>
+
+        <div class="input-item">
+          <p><label for="post-content">Content</label></p>
+          <textarea name="post-content" rows="30" cols="80">{{- .Data.Content.HTML | formatBytes -}}</textarea>
+        </div>
+        <button type="submit" id="post-submit" class="btn">Save</button>
+      </form>
+    </div>
+  </div>
+</body>
+
+</html>
+{{ end }}

@@ -2,9 +2,7 @@ package gcp
 
 import (
 	"context"
-	"time"
-
-	"github.com/davecgh/go-spew/spew"
+	"fmt"
 
 	"cloud.google.com/go/datastore"
 
@@ -12,8 +10,9 @@ import (
 )
 
 const (
-	postKind      = "post"
-	postCreatedAt = "CreatedAt"
+	postMetaKind    = "PostMeta"
+	postContentKind = "PostContent"
+	postCreatedAt   = "CreatedAt"
 )
 
 // PostStore implements app.PostService.
@@ -27,77 +26,119 @@ func NewPostStore(env *app.Env, ds *datastore.Client) (*PostStore, error) {
 	return &PostStore{env: env, ds: ds}, nil
 }
 
-type post struct {
-	ID           string
-	Title        string
-	URLSafeTitle string
-	Content      string
-	CreatedAt    time.Time
-	Tags         []app.Tag
-}
-
 // Create -
 func (store *PostStore) Create(ctx context.Context, post *app.Post) (*app.Post, error) {
-	key := datastore.IncompleteKey(postKind, nil)
-
-	newKey, err := store.ds.Put(ctx, key, store.toDatastoreRepl(post))
-	// TODO Wrap error
+	// TODO transaction
+	meta, err := store.createMeta(ctx, post.Meta)
 	if err != nil {
 		return nil, err
 	}
-	post.ID = newKey.Encode()
 
-	return post, nil
+	content, err := store.createContent(ctx, meta.Key.ID, post.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	return &app.Post{Meta: meta, Content: content}, nil
 }
 
-// ListPosts -
-func (store *PostStore) ListPosts(ctx context.Context, input *app.ListPostsInput) ([]*app.Post, error) {
-	query := datastore.NewQuery(postKind).Offset(input.Offset).Limit(input.Limit)
+func (store *PostStore) createMeta(ctx context.Context, meta *app.PostMeta) (*app.PostMeta, error) {
+	k := datastore.IncompleteKey(postMetaKind, nil)
+	nk, err := store.ds.Put(ctx, k, meta)
+	if err != nil {
+		return nil, err
+	}
+	meta.Key = nk
+
+	return meta, nil
+}
+
+func (store *PostStore) createContent(ctx context.Context, metaKeyID int64, content *app.PostContent) (*app.PostContent, error) {
+	// meta keyをparentに指定するか悩む
+	k := datastore.IDKey(postContentKind, metaKeyID, nil)
+	_, err := store.ds.Put(ctx, k, content)
+	if err != nil {
+		return nil, err
+	}
+
+	return content, nil
+}
+
+// Update -
+func (store *PostStore) Update(ctx context.Context, post *app.Post) (*app.Post, error) {
+	meta, err := store.updateMeta(ctx, post.Meta)
+	if err != nil {
+		return nil, datastoreErr(err)
+	}
+	content, err := store.updateContent(ctx, meta.Key.ID, post.Content)
+
+	return &app.Post{Meta: meta, Content: content}, datastoreErr(err)
+}
+
+func (store *PostStore) updateMeta(ctx context.Context, meta *app.PostMeta) (*app.PostMeta, error) {
+	k := datastore.IDKey(postMetaKind, meta.Key.ID, nil)
+	_, err := store.ds.Put(ctx, k, meta)
+	return meta, err
+}
+
+func (store *PostStore) updateContent(ctx context.Context, metaKeyID int64, content *app.PostContent) (*app.PostContent, error) {
+	k := datastore.IDKey(postContentKind, metaKeyID, nil)
+	_, err := store.ds.Put(ctx, k, content)
+	return content, err
+}
+
+// ListMeta -
+func (store *PostStore) ListMeta(ctx context.Context, input *app.ListMetaInput) ([]*app.PostMeta, error) {
+	q := datastore.NewQuery(postMetaKind).Offset(input.Offset).Limit(input.Limit)
+
+	var order string
 	switch input.Order.Type {
 	case app.PostOrderCreated:
-		query = query.Order(postCreatedAt)
+		order = postCreatedAt
 	default:
-		query = query.Order(postCreatedAt)
+		order = postCreatedAt
 	}
+	if input.Order.Desc {
+		order = "-" + order
+	}
+	q = q.Order(order)
 
-	var posts []*post
-	keys, err := store.ds.GetAll(ctx, query, &posts)
+	var meta []*app.PostMeta
+	_, err := store.ds.GetAll(ctx, q, &meta)
+
+	return meta, err
+}
+
+// Get -
+func (store *PostStore) Get(ctx context.Context, input *app.GetPostInput) (*app.Post, error) {
+	meta, err := store.getMetaByID(ctx, input.MetaID)
 	if err != nil {
-		return nil, err
+		return nil, datastoreErr(err)
+	}
+	content, err := store.getContentByMetaID(ctx, meta.Key.ID)
+	if err != nil {
+		return nil, datastoreErr(err)
 	}
 
-	spew.Dump("got posts", posts)
-	spew.Dump("got keys", keys)
-
-	return store.fromDatastoreRepls(posts), nil
+	return &app.Post{Meta: meta, Content: content}, nil
 }
 
-func (store *PostStore) toDatastoreRepl(p *app.Post) *post {
-	return &post{
-		ID:           p.ID,
-		Title:        p.Title,
-		URLSafeTitle: p.URLSafeTitle,
-		Content:      p.Content,
-		CreatedAt:    p.CreatedAt,
-		Tags:         p.Tags,
-	}
+func (store *PostStore) getMetaByID(ctx context.Context, metaID int64) (*app.PostMeta, error) {
+	k := datastore.IDKey(postMetaKind, metaID, nil)
+	var meta app.PostMeta
+	return &meta, store.ds.Get(ctx, k, &meta)
 }
 
-func (store *PostStore) fromDatastoreRepl(r *post) *app.Post {
-	return &app.Post{
-		ID:           r.ID,
-		Title:        r.Title,
-		URLSafeTitle: r.URLSafeTitle,
-		Content:      r.Content,
-		CreatedAt:    r.CreatedAt,
-		Tags:         r.Tags,
-	}
+func (store *PostStore) getContentByMetaID(ctx context.Context, metaID int64) (*app.PostContent, error) {
+	k := datastore.IDKey(postContentKind, metaID, nil)
+	var content app.PostContent
+	return &content, store.ds.Get(ctx, k, &content)
 }
 
-func (store *PostStore) fromDatastoreRepls(repls []*post) []*app.Post {
-	var posts = make([]*app.Post, len(repls))
-	for i := range repls {
-		posts[i] = store.fromDatastoreRepl(repls[i])
+func datastoreErr(err error) error {
+	if err == datastore.ErrNoSuchEntity {
+		// wrap error
+		fmt.Println("not found error")
 	}
-	return posts
+	return err
 }

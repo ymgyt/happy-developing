@@ -7,7 +7,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
+
+	"go.uber.org/zap"
+
+	"cloud.google.com/go/datastore"
 
 	"github.com/ymgyt/happy-developing/hpdev/app"
 )
@@ -71,7 +77,7 @@ func (ts *templateSet) executeLatestTemplate(w io.Writer, name string, data inte
 		return err
 	}
 
-	t, err := template.New("templateSet").ParseFiles(refreshed...)
+	t, err := newTemplate(refreshed)
 	if err != nil {
 		return fmt.Errorf("failed to parse template files: %s", err)
 	}
@@ -85,7 +91,7 @@ func makeTemplateSet(root string, alwaysParse bool) (*templateSet, error) {
 	if err != nil {
 		return nil, err
 	}
-	t, err := template.New("templateSet").ParseFiles(tmpls...)
+	t, err := newTemplate(tmpls)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template files: %s", err)
 	}
@@ -116,6 +122,28 @@ func isTemplateFile(path string) bool {
 	return strings.HasSuffix(path, templateExt)
 }
 
+func newTemplate(files []string) (*template.Template, error) {
+	return template.New("templateSet").Funcs(funcMap).ParseFiles(files...)
+}
+
+var funcMap = template.FuncMap{
+	"formatTime":        tfFormatTime,
+	"formatPostMetaKey": tfFormatPostMetaID,
+	"formatBytes":       tfFormatBytes,
+}
+
+func tfFormatTime(t time.Time) string {
+	return t.Format("2006-01-02:15:04:05")
+}
+
+func tfFormatPostMetaID(k *datastore.Key) string {
+	return strconv.FormatInt(k.ID, 10)
+}
+
+func tfFormatBytes(b []byte) string {
+	return string(b)
+}
+
 // base provide common behavior to handlers.
 type base struct {
 	*app.Env
@@ -126,5 +154,5 @@ func (b base) handleRenderError(err error) {
 		return
 	}
 
-	b.Env.Log.Error("render error: ", err)
+	b.Env.Log.Error("render", zap.Error(err))
 }

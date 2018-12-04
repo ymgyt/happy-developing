@@ -7,14 +7,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ymgyt/happy-developing/hpdev/gcp"
-
 	"cloud.google.com/go/datastore"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"google.golang.org/api/option"
 
 	"github.com/ymgyt/happy-developing/hpdev/app"
+	"github.com/ymgyt/happy-developing/hpdev/gcp"
 	"github.com/ymgyt/happy-developing/hpdev/handlers"
 	"github.com/ymgyt/happy-developing/hpdev/middlewares"
 	"github.com/ymgyt/happy-developing/hpdev/server"
@@ -47,14 +46,15 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 		fail(err.Error())
 	}
 
-	mws := middlewares.NewChain(r, &middlewares.Logging{})
+	mws := middlewares.NewChain(r, &middlewares.Logging{Log: env.Log})
 
 	r.GET("/static/*filepath", hs.Static.ServeStatic)
 	r.GET("/example", hs.Example.RenderExample)
 
-	r.GET("/author/posts/new", hs.Post.RenderPostForm)
-	r.POST("/author/posts/new", hs.Post.CreatePost)
-	r.GET("/author/posts", hs.Post.ListPosts)
+	// author
+	r.GET("/author/posts", hs.Post.RenderMetaList)
+	r.GET("/author/posts/:metaid", hs.Post.RenderPostForm) // 新規投稿の場合は metaid => new
+	r.POST("/author/posts/:metaid", hs.Post.SavePost)
 
 	return mws
 }
@@ -80,33 +80,15 @@ func newServices(env *app.Env) *app.Services {
 }
 
 func newEnv() *app.Env {
-	// create logger
-	log := newLogger()
-
 	return &app.Env{
-		Log: log,
+		Log: newLogger(),
 		Ctx: context.Background(),
 		Now: app.Now,
 	}
 }
 
-func newLogger() *logrus.Logger {
-	var formatter logrus.Formatter
-	var level logrus.Level
-	switch appMode {
-	case app.DevelopmentMode:
-		formatter = &logrus.TextFormatter{}
-		level = logrus.DebugLevel
-	default:
-		formatter = &logrus.JSONFormatter{}
-		level = logrus.InfoLevel
-	}
-
-	log := logrus.New()
-	log.Formatter = formatter
-	log.Level = level
-
-	return log
+func newLogger() *zap.Logger {
+	return app.MustLogger(&app.LoggingConfig{Mode: appMode, Out: os.Stdout})
 }
 
 func main() {
@@ -120,8 +102,8 @@ func main() {
 		Handler: mux,
 	})
 
-	env.Log.Info("running on ", port)
-	env.Log.Info(s.Run())
+	env.Log.Info(fmt.Sprintf("running %s mode on %s", appMode, port))
+	env.Log.Error("server", zap.Error(s.Run()))
 }
 
 func checkEnvironments() {

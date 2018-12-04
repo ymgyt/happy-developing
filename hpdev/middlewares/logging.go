@@ -1,25 +1,44 @@
 package middlewares
 
 import (
-	"fmt"
 	"net/http"
+	"time"
+
+	"go.uber.org/zap"
 )
 
 // Logging -
 type Logging struct {
 	next http.Handler
+	Log  *zap.Logger
 }
 
 // ServeHTTP -
 func (m *Logging) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	lw := &loggingWriter{ResponseWriter: w}
+	start := time.Now()
 	m.next.ServeHTTP(lw, r)
+	elapsed := time.Since(start)
 
 	// この時点で書き込まれていない場合がある。
 	if lw.statusCode == 0 {
 		lw.statusCode = 200
 	}
-	fmt.Printf("[%3d] %5s %s\n", lw.statusCode, r.Method, r.URL.String())
+
+	if lw.statusCode >= 400 {
+		// Errorで出すと、logic側のloggingとstack traceが重複する.
+		m.Log.Warn("req",
+			zap.Int("c", lw.statusCode),
+			zap.String("m", r.Method),
+			zap.String("u", r.URL.String()),
+			zap.Float64("et", elapsed.Seconds()))
+	} else {
+		m.Log.Info("req",
+			zap.Int("c", lw.statusCode),
+			zap.String("m", r.Method),
+			zap.String("u", r.URL.String()),
+			zap.Float64("et", elapsed.Seconds()))
+	}
 }
 
 // SetNext -
