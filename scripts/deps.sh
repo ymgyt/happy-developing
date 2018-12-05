@@ -25,7 +25,13 @@ function install_kubectl() {
     brew install kubernetes-cli
 }
 
+function install_task() {
+    which task 1>/dev/null && printf "${format}" "task" && return 0;
+    go get -u -v github.com/go-task/task/cmd/task
+}
+
 install_kick
 install_circlecicli
 install_minikube
 install_kubectl
+install_task

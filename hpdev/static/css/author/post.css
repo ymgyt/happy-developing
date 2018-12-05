@@ -1,0 +1,46 @@
+.container {
+    width: 1400px;
+    min-height: px;
+    margin: 0 auto;
+    background-color: #eee;
+}
+
+.left-container {
+    width: 50%;
+    height: 800px ;
+    background-color: #acc;
+    float: left;
+    border-right: 1px solid #eee;
+    padding: 20px;
+}
+
+.right-container {
+    width: 50%;
+    height: 800px;
+    background-color: #cca;
+    float: right;
+}
+
+.post-parameter {
+    width: 100%;
+}
+
+.post-parameter .input-group {
+    width: 100%;
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+}
+
+.post-parameter .input-group .input-label {
+    display: inline-block;
+    width: 20%;
+}
+
+.post-parameter .input-group .input-label-content {
+    display: block;
+    width: 20%;
+}
+
+.post-parameter .input-group .post-content {
+    width: 100%;
+}

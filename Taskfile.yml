@@ -1,0 +1,24 @@
+version: '2'
+
+tasks:
+  build:
+    deps: [deps]
+    cmds:
+      - task: prepare1
+      - task: prepare2
+      - go build -o /tmp/hpdev main.go
+    dir: hpdev
+
+  deps:
+    cmds:
+      - echo "install deps"
+
+  prepare1:
+    cmds:
+      - echo "prepare1"
+    silent: true
+
+  prepare2:
+    cmds:
+      - echo "prepare2"
+    silent: true

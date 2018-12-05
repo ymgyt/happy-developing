@@ -1,0 +1,11 @@
+@charset "UTF-8";
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+.claerfix {
+    clear: both;
+    content: '';
+    display: block;
+}

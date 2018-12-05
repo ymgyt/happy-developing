@@ -3,35 +3,35 @@
 <html lang="ja">
 
 <head>
+  <title>Edit Post</title>
   {{ template "partials/author/head" }}
+  <link rel="stylesheet" href="/static/css/author/post.css">
+  <script defer src="/static/js/author/post.js"></script>
 </head>
 
 <body>
-  <div class="container">
-    <div class="new-post">
-      <form action="/author/posts/{{ .FormAction }}" method="post">
-        <!-- IDは編集できなくする -->
-        <div class="input-item">
-          <label for="post-key-id">Meta Key-ID</label>
-          <input type="text" name="post-key-id" readonly="readonly" value="{{ .Data.Meta.Key.ID }}">
-        </div>
-
-        <div class="input-item">
-          <label for="post-url-safe-title">URL Safe Title</label>
-          <input type="text" name="post-url-safe-title" value="{{ .Data.Meta.URLSafeTitle }}">
-        </div>
-
-        <div class="input-item">
-          <label for="post-title">Title</label>
-          <input type="text" name="post-title" value="{{ .Data.Meta.Title }}">
-        </div>
-
-        <div class="input-item">
-          <p><label for="post-content">Content</label></p>
-          <textarea name="post-content" rows="30" cols="80">{{- .Data.Content.HTML | formatBytes -}}</textarea>
-        </div>
-        <button type="submit" id="post-submit" class="btn">Save</button>
-      </form>
+  <div class="container clearfix">
+    <div class="left-container">
+      <div class="post-parameter">
+        <form>
+          <div class="input-group">
+            <label class="input-label" for="post-id">ID</label>
+            <input id="post-id" type="text" readonly="readonly">
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="post-title">Title</label>
+            <input id="post-title" type="text">
+          </div>
+          <div class="input-group">
+            <label class="input-label-content" for="">Content</label>
+            <textarea class="post-content" id="post-content" cols=90 rows=30></textarea>
+          </div>
+          <button class="btn" id="convertHTMLBtn" type="button">Convert</button>
+        </form>
+      </div>
+    </div>
+    <div class="right-container">
+      <div id="renderingArea">Hello</div>
     </div>
   </div>
 </body>
