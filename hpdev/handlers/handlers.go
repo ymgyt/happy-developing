@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -157,4 +159,32 @@ func (b base) handleRenderError(err error) {
 	}
 
 	b.Env.Log.Error("render", zap.Error(err))
+}
+
+func (b *base) invalidRequest(w http.ResponseWriter, err error) {
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte(err.Error()))
+}
+
+type apiResponse struct {
+	Data interface{}
+	Err  error
+	W    http.ResponseWriter
+}
+
+func (b *base) json(r *apiResponse) {
+	code := http.StatusOK
+	enc := json.NewEncoder(r.W)
+	var encErr error
+	if r.Err != nil {
+		code = http.StatusInternalServerError
+		r.W.WriteHeader(code)
+		encErr = enc.Encode(r.Err.Error())
+	} else {
+		r.W.WriteHeader(code)
+		encErr = enc.Encode(r.Data)
+	}
+	if encErr != nil {
+		b.Env.Log.Warn("encode", zap.Error(encErr))
+	}
 }

@@ -54,7 +54,11 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 	// author
 	r.GET("/author/posts", hs.Post.RenderMetaList)
 	r.GET("/author/posts/:metaid", hs.Post.RenderPostForm) // 新規投稿の場合は metaid => new
-	r.POST("/author/posts/:metaid", hs.Post.SavePost)
+
+	// api
+	r.GET("/api/author/posts/:metaid", hs.Post.Get)
+	r.PUT("/api/author/posts/:metaid", hs.Post.Update)
+	r.POST("/api/author/posts/new", hs.Post.Create)
 
 	r.POST("/markdown", hs.Markdown.ConvertHTML)
 

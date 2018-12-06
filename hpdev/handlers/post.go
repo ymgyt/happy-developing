@@ -1,16 +1,15 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
-	"go.uber.org/zap"
-
 	"cloud.google.com/go/datastore"
 	"github.com/julienschmidt/httprouter"
+	"go.uber.org/zap"
 
 	"github.com/ymgyt/happy-developing/hpdev/app"
-	"github.com/ymgyt/happy-developing/hpdev/view"
 )
 
 // Post はブログの記事を管理する責務をもつ.
@@ -40,71 +39,47 @@ func (p *Post) RenderMetaList(w http.ResponseWriter, r *http.Request, params htt
 }
 
 // RenderPostForm -
-// 新規投稿の場合と既存の編集の場合がある。
 func (p *Post) RenderPostForm(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	rawMetaID := params.ByName("metaid")
-
-	p.Env.Log.Debug("render_post_form", zap.String("metaid", rawMetaID))
-	// 新規投稿
-	if rawMetaID == "new" {
-		// nilだとtemplate側のhandlingが面倒なので、空を渡しておく.
-		err := p.ts.ExecuteTemplate(w, "author/post", view.AuthorPost{Data: initialPost, FormAction: "new"})
-		p.handleRenderError(err)
-		return
-	}
-
-	// 既存の編集
-	metaID, err := strconv.ParseInt(rawMetaID, 10, 64)
-	if err != nil {
-		p.handleRenderError(err)
-		return
-	}
-	post, err := p.service.Get(p.Env.Ctx, &app.GetPostInput{MetaID: metaID})
-	if err != nil {
-		p.handleRenderError(err)
-		return
-	}
-
-	err = p.ts.ExecuteTemplate(w, "author/post", view.AuthorPost{Data: post, FormAction: rawMetaID})
+	err := p.ts.ExecuteTemplate(w, "author/post", nil)
 	p.handleRenderError(err)
 }
 
-// SavePost -
-func (p *Post) SavePost(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	rawMetaID := params.ByName("metaid")
-	post, err := p.readPost(r)
+// Create -
+func (p *Post) Create(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	post, err := p.readJSON(r)
 	if err != nil {
-		// TODO organize api response handling
-		http.Error(w, err.Error(), 500)
+		p.json(&apiResponse{W: w, Err: err})
 		return
 	}
+	created, err := p.service.Create(p.Env.Ctx, post)
+	p.json(&apiResponse{W: w, Data: created, Err: err})
+}
 
-	// 新規投稿
-	if rawMetaID == "new" {
-		created, err := p.service.Create(p.Env.Ctx, post)
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
-		metaID := strconv.FormatInt(created.Meta.Key.ID, 10)
-		p.Env.Log.Debug("post_created", zap.String("meta_id", metaID), zap.String("title", created.Meta.Title))
-		// redirectしたほうがURLがきれいになる.
-		err = p.ts.ExecuteTemplate(w, "author/post", view.AuthorPost{Data: post, FormAction: metaID})
-		p.handleRenderError(err)
-		return
-	}
-
-	// 既存のupdate
-	post, err = p.service.Update(p.Env.Ctx, post)
+// Get -
+func (p *Post) Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	metaID, err := p.readMetaID(params)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		p.invalidRequest(w, err)
 		return
 	}
 
-	metaID := strconv.FormatInt(post.Meta.Key.ID, 10)
-	p.Env.Log.Debug("post_updated", zap.String("meta_id", metaID), zap.String("title", post.Meta.Title))
-	err = p.ts.ExecuteTemplate(w, "author/post", view.AuthorPost{Data: post, FormAction: metaID})
-	p.handleRenderError(err)
+	post, err := p.service.Get(p.Env.Ctx, &app.GetPostInput{MetaID: metaID})
+	p.json(&apiResponse{W: w, Data: post, Err: err})
+}
+
+// Update -
+func (p *Post) Update(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	post, err := p.readJSON(r)
+	if err != nil {
+		panic(err)
+	}
+	_ = post
+
+	w.Write([]byte("OK"))
+}
+
+func (p *Post) readMetaID(params httprouter.Params) (metaID int64, err error) {
+	return strconv.ParseInt(params.ByName("metaid"), 10, 64)
 }
 
 func (p *Post) readPost(r *http.Request) (*app.Post, error) {
@@ -122,16 +97,13 @@ func (p *Post) readPost(r *http.Request) (*app.Post, error) {
 	}
 
 	content := &app.PostContent{
-		HTML: []byte(r.PostFormValue("post-content")),
+		HTML: r.PostFormValue("post-content"),
 	}
 
 	return &app.Post{Meta: meta, Content: content}, nil
 }
 
-// 新規投稿の際にtemplate側に渡す用のPost
-var initialPost = &app.Post{
-	Meta: &app.PostMeta{
-		Key: &datastore.Key{},
-	},
-	Content: &app.PostContent{},
+func (p *Post) readJSON(r *http.Request) (*app.Post, error) {
+	var post app.Post
+	return &post, json.NewDecoder(r.Body).Decode(&post)
 }

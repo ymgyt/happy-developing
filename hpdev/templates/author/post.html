@@ -23,10 +23,26 @@
             <input id="post-title" type="text">
           </div>
           <div class="input-group">
-            <label class="input-label-content" for="">Content</label>
+            <label class="input-label" for="post-url-safe-title">URL Safe Title</label>
+            <input id="post-url-safe-title" type="text">
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="post-created-at">Created At</label>
+            <input id="post-created-at" type="text" readonly="readonly">
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="post-status">Status</label>
+            <select id="post-status">
+              <option value="published">published</option>
+              <option value="draft">draft</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label-content" for="post-content">Content</label>
             <textarea class="post-content" id="post-content" cols=90 rows=30></textarea>
           </div>
           <button class="btn" id="convertHTMLBtn" type="button">Convert</button>
+          <button class="btn" id="savePostBtn" type="button">Save</button>
         </form>
       </div>
     </div>
