@@ -39,7 +39,7 @@ func Hello() string {
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := md.Parse(tc.md)
+			got := md.ConvertHTML(tc.md)
 			// 見やすいようにstringで比較する.
 			if diff := cmp.Diff(string(got), string(tc.want)); diff != "" {
 				t.Errorf("(-got +want)\n%s", diff)

@@ -57,9 +57,12 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 
 	// api
 	r.GET("/api/author/posts/:metaid", hs.Post.Get)
-	r.PUT("/api/author/posts/:metaid", hs.Post.Update)
-	r.POST("/api/author/posts/new", hs.Post.Create)
+	r.GET("/api/author/tags", hs.Tag.List)
 
+	r.PUT("/api/author/posts/:metaid", hs.Post.Update)
+
+	r.POST("/api/author/posts", hs.Post.Create)
+	r.POST("/api/author/tags", hs.Tag.Create)
 	r.POST("/markdown", hs.Markdown.ConvertHTML)
 
 	return mws
@@ -79,9 +82,14 @@ func newServices(env *app.Env) *app.Services {
 	if err != nil {
 		fail(err.Error())
 	}
+	tagService, err := gcp.NewTagStore(env, datastoreClient)
+	if err != nil {
+		fail(err.Error())
+	}
 
 	return &app.Services{
 		PostService: postService,
+		TagService:  tagService,
 	}
 }
 

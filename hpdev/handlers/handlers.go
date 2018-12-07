@@ -39,6 +39,7 @@ func New(cfg Config) (*Handlers, error) {
 		Static:   static,
 		Post:     &Post{base: base, ts: ts, templateName: "new_post", service: cfg.Services.PostService},
 		Markdown: &Markdown{base: base},
+		Tag:      &Tag{base: base, service: cfg.Services.TagService},
 	}, nil
 }
 
@@ -58,6 +59,7 @@ type Handlers struct {
 	Static   *Static
 	Post     *Post
 	Markdown *Markdown
+	Tag      *Tag
 }
 
 type templateSet struct {
