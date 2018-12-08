@@ -18,6 +18,7 @@ import (
 	"cloud.google.com/go/datastore"
 
 	"github.com/ymgyt/happy-developing/hpdev/app"
+	"github.com/ymgyt/happy-developing/hpdev/errors"
 )
 
 const (
@@ -175,15 +176,13 @@ type apiResponse struct {
 }
 
 func (b *base) json(r *apiResponse) {
-	code := http.StatusOK
+	code := errors.StatusCode(r.Err)
+	r.W.WriteHeader(code)
 	enc := json.NewEncoder(r.W)
 	var encErr error
 	if r.Err != nil {
-		code = http.StatusInternalServerError
-		r.W.WriteHeader(code)
-		encErr = enc.Encode(r.Err.Error())
+		encErr = enc.Encode(r.Err)
 	} else {
-		r.W.WriteHeader(code)
 		encErr = enc.Encode(r.Data)
 	}
 	if encErr != nil {

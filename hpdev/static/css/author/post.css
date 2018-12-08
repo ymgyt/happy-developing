@@ -1,5 +1,5 @@
 .container {
-    width: 1400px;
+    width: 90%;
     min-height: px;
     margin: 0 auto;
     background-color: #eee;
@@ -17,8 +17,8 @@
 .right-container {
     width: 50%;
     height: 800px;
-    background-color: #cca;
     float: right;
+    padding: 20px;
 }
 
 .post-parameter {
@@ -28,12 +28,38 @@
 .post-parameter .input-group {
     width: 100%;
     margin-bottom: 15px;
-    border: 1px solid #eee;
+    /* border: 1px solid #eee; */
 }
 
 .post-parameter .input-group .input-label {
     display: inline-block;
     width: 20%;
+}
+
+.post-parameter .input-group input {
+    width: 50%;
+}
+
+.input-group .tag-select {
+    margin-top: 20px;
+}
+
+.input-group .tag-select button {
+    margin-right: 10px;
+    border-radius: 3px;
+}
+
+.input-group .tag-select button[selected="false"] {
+    background-color: #777;
+    opacity: 0.5;
+}
+
+.input-group .tag-select button[selected="true"] {
+    background-color: #eee;
+}
+
+.input-group .tag-select button[selected="true"]:before {
+    content: '\2714';
 }
 
 .post-parameter .input-group .input-label-content {
@@ -43,4 +69,5 @@
 
 .post-parameter .input-group .post-content {
     width: 100%;
+    background-color: #ddd;
 }

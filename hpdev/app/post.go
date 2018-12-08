@@ -22,7 +22,7 @@ type PostMeta struct {
 	URLSafeTitle string         `json:"url_safe_title"`
 	CreatedAt    time.Time      `json:"created_at"`
 	Status       PostStatus     `json:"status,string"`
-	Tags         []Tag          `json:"tags"`
+	TagIDs       []int64        `json:"tag_ids"`
 }
 
 // PostContent represents blog post content data.

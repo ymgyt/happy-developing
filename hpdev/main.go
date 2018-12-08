@@ -46,7 +46,7 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 		fail(err.Error())
 	}
 
-	mws := middlewares.NewChain(r, &middlewares.Logging{Log: env.Log})
+	mws := middlewares.NewChain(r, middlewares.MustLogging(env))
 
 	r.GET("/static/*filepath", hs.Static.ServeStatic)
 	r.GET("/example", hs.Example.RenderExample)
@@ -61,7 +61,7 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 
 	r.PUT("/api/author/posts/:metaid", hs.Post.Update)
 
-	r.POST("/api/author/posts", hs.Post.Create)
+	r.POST("/api/author/posts/new", hs.Post.Create)
 	r.POST("/api/author/tags", hs.Tag.Create)
 	r.POST("/markdown", hs.Markdown.ConvertHTML)
 
@@ -95,9 +95,10 @@ func newServices(env *app.Env) *app.Services {
 
 func newEnv() *app.Env {
 	return &app.Env{
-		Log: newLogger(),
-		Ctx: context.Background(),
-		Now: app.Now,
+		Mode: appMode,
+		Log:  newLogger(),
+		Ctx:  context.Background(),
+		Now:  app.Now,
 	}
 }
 

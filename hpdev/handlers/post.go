@@ -73,9 +73,8 @@ func (p *Post) Update(w http.ResponseWriter, r *http.Request, params httprouter.
 	if err != nil {
 		panic(err)
 	}
-	_ = post
-
-	w.Write([]byte("OK"))
+	updated, err := p.service.Update(p.Env.Ctx, post)
+	p.json(&apiResponse{W: w, Data: updated, Err: err})
 }
 
 func (p *Post) readMetaID(params httprouter.Params) (metaID int64, err error) {

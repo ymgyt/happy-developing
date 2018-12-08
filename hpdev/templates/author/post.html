@@ -6,6 +6,8 @@
   <title>Edit Post</title>
   {{ template "partials/author/head" }}
   <link rel="stylesheet" href="/static/css/author/post.css">
+  <link rel="stylesheet" href="/static/css/post.css">
+  <link rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/github-v2.css">
   <script defer src="/static/js/author/post.js"></script>
 </head>
 
@@ -38,16 +40,24 @@
             </select>
           </div>
           <div class="input-group">
+            <div class="tag-create">
+              <label class="input-label" for="create-tag">Tags</label>
+              <input id="create-tag" class="btn" type="text">
+              <button class="btn" id="createTagBtn" type="button">Create</button>
+            </div>
+            <div class="tag-select" id="tag-select">
+            </div>
+          </div>
+          <div class="input-group">
             <label class="input-label-content" for="post-content">Content</label>
             <textarea class="post-content" id="post-content" cols=90 rows=30></textarea>
           </div>
-          <button class="btn" id="convertHTMLBtn" type="button">Convert</button>
           <button class="btn" id="savePostBtn" type="button">Save</button>
         </form>
       </div>
     </div>
     <div class="right-container">
-      <div id="renderingArea">Hello</div>
+      <div id="renderingArea" class="post-container">Hello</div>
     </div>
   </div>
 </body>

@@ -1,0 +1,9 @@
+.post-container {
+    border: 1px solid #aaa;
+}
+
+.post-container pre {
+    background-color: #eee;
+    border-radius: 1px;
+}
+

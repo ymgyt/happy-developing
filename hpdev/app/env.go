@@ -23,9 +23,10 @@ const (
 
 // Env -
 type Env struct {
-	Log *zap.Logger
-	Ctx context.Context
-	Now func() time.Time
+	Mode Mode
+	Log  *zap.Logger
+	Ctx  context.Context
+	Now  func() time.Time
 }
 
 // Mode -

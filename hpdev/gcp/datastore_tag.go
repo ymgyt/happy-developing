@@ -2,9 +2,11 @@ package gcp
 
 import (
 	"context"
+	"fmt"
 
 	"cloud.google.com/go/datastore"
 	"github.com/ymgyt/happy-developing/hpdev/app"
+	"github.com/ymgyt/happy-developing/hpdev/errors"
 )
 
 const (
@@ -29,7 +31,15 @@ func NewTagStore(env *app.Env, ds *datastore.Client) (*TagStore, error) {
 
 // Create -
 func (store *TagStore) Create(ctx context.Context, tag *app.TagToCreate) (*app.Tag, error) {
-	// TODO check already exist tags
+	// 既存check
+	exists, err := store.exists(ctx, tag.Name)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, errors.AlreadyExists(fmt.Sprintf("tag: %s", tag.Name), nil)
+	}
+
 	incKey := datastore.IncompleteKey(tagKind, nil)
 	key, err := store.ds.Put(ctx, incKey, tag)
 	if err != nil {
@@ -41,9 +51,17 @@ func (store *TagStore) Create(ctx context.Context, tag *app.TagToCreate) (*app.T
 	}, nil
 }
 
+func (store *TagStore) exists(ctx context.Context, name string) (bool, error) {
+	tags, err := store.List(ctx, &app.ListTagsInput{Name: name})
+	return len(tags) >= 1, err
+}
+
 // List -
 func (store *TagStore) List(ctx context.Context, in *app.ListTagsInput) ([]*app.Tag, error) {
 	q := datastore.NewQuery(tagKind)
+	if in.Name != "" {
+		q = q.Filter("Name =", in.Name)
+	}
 
 	var repls []*tag
 	_, err := store.ds.GetAll(ctx, q, &repls)

@@ -14,7 +14,9 @@ type TagToCreate struct {
 }
 
 // ListTagsInput -
-type ListTagsInput struct{}
+type ListTagsInput struct {
+	Name string
+}
 
 // TagService -
 type TagService interface {
