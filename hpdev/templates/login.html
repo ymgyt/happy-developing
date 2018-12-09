@@ -1,0 +1,13 @@
+{{ define "login" }}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+</head>
+
+<body>
+  <a href="{{ .Github.AuthorizeURL }}?client_id={{ .Github.ClientID }}&redirect_uri={{ .Github.CallbackURL }}&state={{ .CSRFToken }}">Github</a>
+</body>
+
+</html>
+{{ end }}

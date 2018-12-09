@@ -19,6 +19,7 @@ import (
 
 	"github.com/ymgyt/happy-developing/hpdev/app"
 	"github.com/ymgyt/happy-developing/hpdev/errors"
+	"github.com/ymgyt/happy-developing/hpdev/oauth2"
 )
 
 const (
@@ -34,6 +35,7 @@ func New(cfg Config) (*Handlers, error) {
 	base := &base{Env: cfg.Env}
 
 	static := (&Static{base: base}).StaticRoot(path.Join(cfg.AppRoot, cfg.StaticPath), cfg.StaticPath)
+	httpClient := &http.Client{}
 
 	return &Handlers{
 		Example:  &Example{base: base, ts: ts, templateName: "layouts/base"},
@@ -41,6 +43,8 @@ func New(cfg Config) (*Handlers, error) {
 		Post:     &Post{base: base, ts: ts, templateName: "new_post", service: cfg.Services.PostService},
 		Markdown: &Markdown{base: base},
 		Tag:      &Tag{base: base, service: cfg.Services.TagService},
+		OAuth2:   &OAuth2{base: base, ts: ts, Config: cfg.OAuth2Config, HTTPClient: httpClient},
+		Auth:     &Auth{base: base, HTTPClient: httpClient, JWT: cfg.Services.JWTService},
 	}, nil
 }
 
@@ -52,6 +56,7 @@ type Config struct {
 	StaticPath           string
 	TemplatePath         string
 	AlwaysParseTemplates bool
+	OAuth2Config         *oauth2.Config
 }
 
 // Handlers -
@@ -61,6 +66,8 @@ type Handlers struct {
 	Post     *Post
 	Markdown *Markdown
 	Tag      *Tag
+	OAuth2   *OAuth2
+	Auth     *Auth
 }
 
 type templateSet struct {

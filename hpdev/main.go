@@ -7,6 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+	"github.com/ymgyt/happy-developing/hpdev/oauth2"
+
 	"cloud.google.com/go/datastore"
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
@@ -25,11 +28,13 @@ const (
 )
 
 var (
-	appRoot           string
-	port              string
-	appMode           app.Mode
-	gcpCredentialJSON string
-	gcpProjectID      string
+	appRoot            string
+	port               string
+	appMode            app.Mode
+	gcpCredentialJSON  string
+	gcpProjectID       string
+	githubClientID     string
+	githubClientSecret string
 )
 
 func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
@@ -41,15 +46,23 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 		StaticPath:           "/static",
 		TemplatePath:         "/templates",
 		AlwaysParseTemplates: appMode == app.DevelopmentMode,
+		OAuth2Config:         newOAuth2Config(),
 	})
 	if err != nil {
 		fail(err.Error())
 	}
 
+	// middlewareを共有するために、routerをgroupingする必要がある
+	// ginを参考にする..?
 	mws := middlewares.NewChain(r, middlewares.MustLogging(env))
 
 	r.GET("/static/*filepath", hs.Static.ServeStatic)
-	r.GET("/example", hs.Example.RenderExample)
+	r.GET("/example", hs.Example.RenderExample) // TODO cleanup
+
+	// auth
+	r.GET("/login", hs.OAuth2.RenderLogin)
+	r.GET("/oauth/github/callback", hs.OAuth2.GithubCallback)
+	r.GET("/authenticate", hs.Auth.Authenticate)
 
 	// author
 	r.GET("/author/posts", hs.Post.RenderMetaList)
@@ -86,24 +99,44 @@ func newServices(env *app.Env) *app.Services {
 	if err != nil {
 		fail(err.Error())
 	}
+	jwtService := &app.JWT{HMACSecret: []byte("should_more_secret_random_value")}
 
 	return &app.Services{
 		PostService: postService,
 		TagService:  tagService,
+		JWTService:  jwtService,
 	}
 }
 
 func newEnv() *app.Env {
 	return &app.Env{
-		Mode: appMode,
-		Log:  newLogger(),
-		Ctx:  context.Background(),
-		Now:  app.Now,
+		Mode:      appMode,
+		Log:       newLogger(),
+		Ctx:       context.Background(),
+		Now:       app.Now,
+		Validator: app.MustValidator(),
 	}
 }
 
 func newLogger() *zap.Logger {
 	return app.MustLogger(&app.LoggingConfig{Mode: appMode, Out: os.Stdout})
+}
+
+func newOAuth2Config() *oauth2.Config {
+	return &oauth2.Config{
+		Github: &oauth2.Entry{
+			Endpoint: &oauth2.Endpoint{
+				AuthorizeURL: "https://github.com/login/oauth/authorize",
+				TokenURL:     "https://github.com/login/oauth/access_token",
+			},
+			Credential: &oauth2.Credential{
+				ClientID:     githubClientID,
+				ClientSecret: githubClientSecret,
+			},
+			CallbackURL: "http://localhost:8123/oauth/github/callback",
+		},
+		CSRFToken: "should_be_random",
+	}
 }
 
 func main() {
@@ -117,10 +150,18 @@ func main() {
 		Handler: mux,
 	})
 
+	r := gin.Default()
+
+	author := r.Group("/author", nil)
+	_ = author
+
+	r.Run("")
+
 	env.Log.Info(fmt.Sprintf("running %s mode on %s", appMode, port))
 	env.Log.Error("server", zap.Error(s.Run()))
 }
 
+// NEED environment variable manager like env config.
 func checkEnvironments() {
 	if appRoot == "" {
 		fail("environment variable APP_ROOT required")
@@ -134,6 +175,12 @@ func checkEnvironments() {
 	if gcpCredentialJSON == "" {
 		fail("environment variable GCP_CREDENTIAL_JSON required")
 	}
+	if githubClientID == "" {
+		fail("environment variable GITHUB_CLIENT_ID required")
+	}
+	if githubClientSecret == "" {
+		fail("environment variable GITHUB_CLIENT_SECRET required")
+	}
 }
 
 func init() {
@@ -144,6 +191,8 @@ func init() {
 	}
 	gcpProjectID = os.Getenv("GCP_PROJECT_ID")
 	gcpCredentialJSON = os.Getenv("GCP_CREDENTIAL_JSON")
+	githubClientID = os.Getenv("GITHUB_CLIENT_ID")
+	githubClientSecret = os.Getenv("GITHUB_CLIENT_SECRET")
 
 	switch m := strings.ToLower(os.Getenv("APP_MODE")); m {
 	case "dev", "development":

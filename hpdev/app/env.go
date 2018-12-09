@@ -5,9 +5,8 @@ import (
 	"io"
 	"time"
 
-	"go.uber.org/zap/zapcore"
-
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -23,10 +22,11 @@ const (
 
 // Env -
 type Env struct {
-	Mode Mode
-	Log  *zap.Logger
-	Ctx  context.Context
-	Now  func() time.Time
+	Mode      Mode
+	Log       *zap.Logger
+	Ctx       context.Context
+	Now       func() time.Time
+	Validator Validator
 }
 
 // Mode -
