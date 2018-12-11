@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/urfave/negroni"
 	"github.com/ymgyt/happy-developing/hpdev/oauth2"
 
 	"cloud.google.com/go/datastore"
@@ -35,7 +35,20 @@ var (
 	gcpProjectID       string
 	githubClientID     string
 	githubClientSecret string
+	authorEmail        string
 )
+
+func getUrlParams(router *httprouter.Router, req *http.Request) httprouter.Params {
+	_, params, _ := router.Lookup(req.Method, req.URL.Path)
+	return params
+}
+
+func callwithParams(router *httprouter.Router, handler func(w http.ResponseWriter, r *http.Request, ps httprouter.Params)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := getUrlParams(router, r)
+		handler(w, r, params)
+	}
+}
 
 func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 	services := newServices(env)
@@ -52,9 +65,17 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 		fail(err.Error())
 	}
 
-	// middlewareを共有するために、routerをgroupingする必要がある
-	// ginを参考にする..?
-	mws := middlewares.NewChain(r, middlewares.MustLogging(env))
+	jwtMW := &middlewares.JWTVerifier{JWT: services.JWTService, Env: env}
+	authorizerMW := &middlewares.Authorizer{Env: env, Email: authorEmail}
+
+	withAuthorize := func(h httprouter.Handle) http.Handler {
+		n := negroni.New(jwtMW, authorizerMW)
+		n.UseHandlerFunc(callwithParams(r, h))
+		return n
+	}
+
+	r.Handler("GET", "/author/posts", withAuthorize(hs.Post.RenderMetaList))
+	r.Handler("GET", "/author/posts/:metaid", withAuthorize(hs.Post.RenderPostForm)) // 新規投稿の場合は metaid => new
 
 	r.GET("/static/*filepath", hs.Static.ServeStatic)
 	r.GET("/example", hs.Example.RenderExample) // TODO cleanup
@@ -64,11 +85,8 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 	r.GET("/oauth/github/callback", hs.OAuth2.GithubCallback)
 	r.GET("/authenticate", hs.Auth.Authenticate)
 
-	// author
-	r.GET("/author/posts", hs.Post.RenderMetaList)
-	r.GET("/author/posts/:metaid", hs.Post.RenderPostForm) // 新規投稿の場合は metaid => new
-
 	// api
+	// authorizeに組み込む
 	r.GET("/api/author/posts/:metaid", hs.Post.Get)
 	r.GET("/api/author/tags", hs.Tag.List)
 
@@ -78,7 +96,12 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 	r.POST("/api/author/tags", hs.Tag.Create)
 	r.POST("/markdown", hs.Markdown.ConvertHTML)
 
-	return mws
+	// 共通で適用するmiddleware
+	// panic recoverも必要
+	common := negroni.New(middlewares.MustLogging(env))
+	common.UseHandler(r)
+
+	return common
 }
 
 func fail(msg string) {
@@ -150,13 +173,6 @@ func main() {
 		Handler: mux,
 	})
 
-	r := gin.Default()
-
-	author := r.Group("/author", nil)
-	_ = author
-
-	r.Run("")
-
 	env.Log.Info(fmt.Sprintf("running %s mode on %s", appMode, port))
 	env.Log.Error("server", zap.Error(s.Run()))
 }
@@ -193,6 +209,7 @@ func init() {
 	gcpCredentialJSON = os.Getenv("GCP_CREDENTIAL_JSON")
 	githubClientID = os.Getenv("GITHUB_CLIENT_ID")
 	githubClientSecret = os.Getenv("GITHUB_CLIENT_SECRET")
+	authorEmail = os.Getenv("AUTHOR_EMAIL")
 
 	switch m := strings.ToLower(os.Getenv("APP_MODE")); m {
 	case "dev", "development":

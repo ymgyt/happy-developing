@@ -26,4 +26,5 @@ const (
 	InvalidRealm = ""
 	// PasswordRealm -
 	PasswordRealm = "password"
+	EmailRealm    = "email"
 )

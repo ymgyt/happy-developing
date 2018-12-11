@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/ymgyt/happy-developing/hpdev/app"
+	"github.com/ymgyt/happy-developing/hpdev/view"
 )
 
 // Post はブログの記事を管理する責務をもつ.
@@ -34,7 +35,12 @@ func (p *Post) RenderMetaList(w http.ResponseWriter, r *http.Request, params htt
 		return
 	}
 
-	err = p.ts.ExecuteTemplate(w, "author/posts", metaList)
+	// link先の認証も通れるようにrenderingの段階で渡しておく.
+	// /author/posts?id_token=xxx となるので、js側でlink(href)にappendする処理をいれてもよいかもしれない.
+	err = p.ts.ExecuteTemplate(w, "author/posts", &view.AuthorPosts{
+		MetaList: metaList,
+		IDToken:  r.URL.Query().Get("id_token"),
+	})
 	p.handleRenderError(err)
 }
 

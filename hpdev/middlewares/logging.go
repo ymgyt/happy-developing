@@ -17,7 +17,6 @@ type Logging struct {
 	logger  *zap.Logger
 	sugar   *zap.SugaredLogger
 	logging func(code int, r *http.Request, elapsed time.Duration)
-	next    http.Handler
 }
 
 // MustLogging -
@@ -44,10 +43,10 @@ func NewLogging(env *app.Env) (*Logging, error) {
 }
 
 // ServeHTTP -
-func (m *Logging) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *Logging) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	lw := &loggingWriter{ResponseWriter: w}
 	start := time.Now()
-	m.next.ServeHTTP(lw, r)
+	next.ServeHTTP(lw, r)
 	elapsed := time.Since(start)
 
 	// この時点で書き込まれていない場合がある。
@@ -84,11 +83,6 @@ func (m *Logging) console(code int, r *http.Request, elapsed time.Duration) {
 	} else {
 		m.sugar.Info(msg)
 	}
-}
-
-// SetNext -
-func (m *Logging) SetNext(next http.Handler) {
-	m.next = next
 }
 
 type loggingWriter struct {

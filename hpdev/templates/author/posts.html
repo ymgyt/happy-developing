@@ -25,22 +25,18 @@
       </tr>
     </thead>
     <tbody>
-      {{ range . }}
-      {{ template "author/posts/post" . }}
+      {{ $idToken := .IDToken }}
+      {{ range .MetaList }}
+      <tr>
+        <td>{{ .URLSafeTitle }}</td>
+        <td>{{ .Title }}</td>
+        <td>{{ .CreatedAt | formatTime }}</td>
+        <td> <a href="/author/posts/{{ .Key | formatPostMetaKey }}?id_token={{ $idToken}}">Edit</a></td>
+      </tr>
       {{ end }}
     </tbody>
   </table>
 </body>
 
 </html>
-
-{{ end }}
-
-{{ define "author/posts/post" }}
-<tr>
-  <td>{{ .URLSafeTitle }}</td>
-  <td>{{ .Title }}</td>
-  <td>{{ .CreatedAt | formatTime }}</td>
-  <td> <a href="/author/posts/{{ .Key | formatPostMetaKey }}">Edit</a></td>
-</tr>
 {{ end }}
