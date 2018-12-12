@@ -298,6 +298,7 @@ const textareaHandler = ui => {
     return event => {
         // hot convert
         if (event.key === "Enter" && event.shiftKey) {
+            event.preventDefault()
             activate()
         }
 

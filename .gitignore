@@ -1,2 +1,3 @@
 .envrc
 hpdev/credentials
+scripts/_deploy.sh

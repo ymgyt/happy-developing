@@ -38,13 +38,14 @@ func New(cfg Config) (*Handlers, error) {
 	httpClient := &http.Client{}
 
 	return &Handlers{
-		Example:  &Example{base: base, ts: ts, templateName: "layouts/base"},
-		Static:   static,
-		Post:     &Post{base: base, ts: ts, templateName: "new_post", service: cfg.Services.PostService},
-		Markdown: &Markdown{base: base},
-		Tag:      &Tag{base: base, service: cfg.Services.TagService},
-		OAuth2:   &OAuth2{base: base, ts: ts, Config: cfg.OAuth2Config, HTTPClient: httpClient},
-		Auth:     &Auth{base: base, HTTPClient: httpClient, JWT: cfg.Services.JWTService},
+		Example:     &Example{base: base, ts: ts, templateName: "layouts/base"},
+		HealthCheck: &HealthCheck{},
+		Static:      static,
+		Post:        &Post{base: base, ts: ts, templateName: "new_post", service: cfg.Services.PostService},
+		Markdown:    &Markdown{base: base},
+		Tag:         &Tag{base: base, service: cfg.Services.TagService},
+		OAuth2:      &OAuth2{base: base, ts: ts, Config: cfg.OAuth2Config, HTTPClient: httpClient},
+		Auth:        &Auth{base: base, HTTPClient: httpClient, JWT: cfg.Services.JWTService},
 	}, nil
 }
 
@@ -61,13 +62,14 @@ type Config struct {
 
 // Handlers -
 type Handlers struct {
-	Example  *Example
-	Static   *Static
-	Post     *Post
-	Markdown *Markdown
-	Tag      *Tag
-	OAuth2   *OAuth2
-	Auth     *Auth
+	Example     *Example
+	HealthCheck *HealthCheck
+	Static      *Static
+	Post        *Post
+	Markdown    *Markdown
+	Tag         *Tag
+	OAuth2      *OAuth2
+	Auth        *Auth
 }
 
 type templateSet struct {

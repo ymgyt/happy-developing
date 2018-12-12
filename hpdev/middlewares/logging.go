@@ -60,15 +60,15 @@ func (m *Logging) stdLogging(code int, r *http.Request, elapsed time.Duration) {
 	if code >= 400 {
 		// Errorで出すと、logic側のloggingとstack traceが重複する. optionの指定でなんとかできるかもしれない.
 		m.logger.Warn("req",
-			zap.Int("c", code),
-			zap.String("m", r.Method),
-			zap.String("u", r.URL.String()),
+			zap.Int("code", code),
+			zap.String("method", r.Method),
+			zap.String("url", r.URL.String()),
 			zap.Float64("et", elapsed.Seconds()))
 	} else {
 		m.logger.Info("req",
-			zap.Int("c", code),
-			zap.String("m", r.Method),
-			zap.String("u", r.URL.String()),
+			zap.Int("code", code),
+			zap.String("method", r.Method),
+			zap.String("url", r.URL.String()),
 			zap.Float64("et", elapsed.Seconds()))
 	}
 }

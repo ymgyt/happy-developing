@@ -28,8 +28,9 @@ const (
 )
 
 var (
+	appHost            string
+	appPort            string
 	appRoot            string
-	port               string
 	appMode            app.Mode
 	gcpCredentialJSON  string
 	gcpProjectID       string
@@ -50,8 +51,10 @@ func callwithParams(router *httprouter.Router, handler func(w http.ResponseWrite
 	}
 }
 
-func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
-	services := newServices(env)
+func registerHandlers(env *app.Env, r *httprouter.Router, datastoreClient *datastore.Client) http.Handler {
+	r.RedirectTrailingSlash = true
+
+	services := newServices(env, datastoreClient)
 	hs, err := handlers.New(handlers.Config{
 		Env:                  env,
 		Services:             services,
@@ -79,8 +82,9 @@ func registerHandlers(env *app.Env, r *httprouter.Router) http.Handler {
 
 	r.GET("/static/*filepath", hs.Static.ServeStatic)
 	r.GET("/example", hs.Example.RenderExample) // TODO cleanup
+	r.GET("/hc", hs.HealthCheck.Beat)
 
-	// auth
+	// authorize flow
 	r.GET("/login", hs.OAuth2.RenderLogin)
 	r.GET("/oauth/github/callback", hs.OAuth2.GithubCallback)
 	r.GET("/authenticate", hs.Auth.Authenticate)
@@ -109,11 +113,7 @@ func fail(msg string) {
 	os.Exit(1)
 }
 
-func newServices(env *app.Env) *app.Services {
-	datastoreClient, err := datastore.NewClient(env.Ctx, gcpProjectID, option.WithCredentialsFile(gcpCredentialJSON))
-	if err != nil {
-		fail(err.Error())
-	}
+func newServices(env *app.Env, datastoreClient *datastore.Client) *app.Services {
 	postService, err := gcp.NewPostStore(env, datastoreClient)
 	if err != nil {
 		fail(err.Error())
@@ -156,29 +156,55 @@ func newOAuth2Config() *oauth2.Config {
 				ClientID:     githubClientID,
 				ClientSecret: githubClientSecret,
 			},
-			CallbackURL: "http://localhost:8123/oauth/github/callback",
+			CallbackURL: endpointBase() + "/oauth/github/callback",
 		},
 		CSRFToken: "should_be_random",
 	}
+}
+
+func endpointBase() string {
+	scheme := "https"
+	if appMode == app.DevelopmentMode {
+		scheme = "http"
+	}
+	return fmt.Sprintf("%s://%s:%s", scheme, appHost, appPort)
+}
+
+func mustDatastoreClient(ctx context.Context) *datastore.Client {
+	datastoreClient, err := datastore.NewClient(ctx, gcpProjectID, option.WithCredentialsFile(gcpCredentialJSON))
+	if err != nil {
+		panic(err)
+	}
+	return datastoreClient
 }
 
 func main() {
 	checkEnvironments()
 
 	env := newEnv()
-	mux := registerHandlers(env, httprouter.New())
+	datastoreClient := mustDatastoreClient(env.Ctx)
+	mux := registerHandlers(env, httprouter.New(), datastoreClient)
 
 	s := server.Must(server.Config{
-		Addr:    ":" + port,
-		Handler: mux,
+		Addr:            ":" + appPort,
+		Env:             env,
+		DatastoreClient: datastoreClient,
+		DisableHTTPS:    appMode == app.DevelopmentMode,
+		Handler:         mux,
 	})
 
-	env.Log.Info(fmt.Sprintf("running %s mode on %s", appMode, port))
+	env.Log.Info(fmt.Sprintf("running %s mode on %s", appMode, appPort))
 	env.Log.Error("server", zap.Error(s.Run()))
 }
 
 // NEED environment variable manager like env config.
 func checkEnvironments() {
+	if appHost == "" {
+		fail("environment variable APP_HOST required")
+	}
+	if appPort == "" {
+		fail("environment variable APP_PORT required")
+	}
 	if appRoot == "" {
 		fail("environment variable APP_ROOT required")
 	}
@@ -200,16 +226,18 @@ func checkEnvironments() {
 }
 
 func init() {
+	appHost = os.Getenv("APP_HOST")
+	appPort = os.Getenv("APP_PORT")
 	appRoot = os.Getenv("APP_ROOT")
-	port = os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
 	gcpProjectID = os.Getenv("GCP_PROJECT_ID")
 	gcpCredentialJSON = os.Getenv("GCP_CREDENTIAL_JSON")
 	githubClientID = os.Getenv("GITHUB_CLIENT_ID")
 	githubClientSecret = os.Getenv("GITHUB_CLIENT_SECRET")
 	authorEmail = os.Getenv("AUTHOR_EMAIL")
+
+	if appPort == "" {
+		appPort = defaultPort
+	}
 
 	switch m := strings.ToLower(os.Getenv("APP_MODE")); m {
 	case "dev", "development":
